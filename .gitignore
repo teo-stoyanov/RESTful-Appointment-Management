@@ -1,0 +1,8 @@
+target/
+javadoc/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
