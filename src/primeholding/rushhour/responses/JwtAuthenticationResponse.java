@@ -1,9 +1,9 @@
-package primeholding.rushhour.models;
+package primeholding.rushhour.responses;
 
 import lombok.Data;
 
 @Data
-public class JwtAuthenticationResponse {
+public class JwtAuthenticationResponse implements Response{
     private String accessToken;
     private String tokenType = "Bearer";
 
