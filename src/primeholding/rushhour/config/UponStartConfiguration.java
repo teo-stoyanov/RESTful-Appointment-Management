@@ -34,18 +34,6 @@ public class UponStartConfiguration {
 
     @EventListener
     public void addRolesIfNotExist(ApplicationReadyEvent event) {
-        if (!this.roleService.findByName(RoleName.ADMIN).isPresent() && !this.roleService.findByName(RoleName.USER).isPresent()) {
-            Role user = new Role();
-            user.setName(RoleName.USER);
-
-            Role admin = new Role();
-            admin.setName(RoleName.ADMIN);
-
-            this.roleService.register(user);
-            this.roleService.register(admin);
-
-        }
-
         if (!this.userService.existWithEmail(ADMIN_EMAIL)) {
             User admin = new User();
             admin.setFirstName("Minch");
