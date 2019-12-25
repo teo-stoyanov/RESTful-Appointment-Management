@@ -32,7 +32,6 @@ import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 @SuppressWarnings("All")
 @RestController
@@ -71,14 +70,11 @@ public class AuthenticationController {
                     , HttpStatus.BAD_REQUEST);
         }
 
-        Optional<Role> userRole = this.roleService.findByName(RoleName.USER);
-        if (!userRole.isPresent()) {
-            return new ResponseEntity(new ErrorResponse(400, "Can't find User name", "User name not exists!")
-                    , HttpStatus.BAD_REQUEST);
-        }
-        User user = this.mapper.signUpToUser(registerModel);
+        Role userRole = this.roleService.getByName(RoleName.USER);
+
+        User user = this.mapper.registerToUser(registerModel);
         user.setPassword(this.passwordEncoder.encode(user.getPassword()));
-        user.setRoles(Collections.singleton(userRole.get()));
+        user.setRoles(Collections.singleton(userRole));
 
         this.userService.register(user);
 

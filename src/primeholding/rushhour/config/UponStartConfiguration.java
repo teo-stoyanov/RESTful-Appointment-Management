@@ -13,7 +13,6 @@ import primeholding.rushhour.services.UserService;
 
 import java.util.Collections;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 @Component
 public class UponStartConfiguration {
@@ -41,11 +40,9 @@ public class UponStartConfiguration {
             admin.setEmail(ADMIN_EMAIL);
             admin.setPassword(this.passwordEncoder.encode("1234"));
 
-            Optional<Role> optionalRole = this.roleService.findByName(RoleName.ADMIN);
-            if (!optionalRole.isPresent()) {
-                throw new NoSuchElementException();
-            }
-            admin.setRoles(Collections.singleton(optionalRole.get()));
+            Role role = this.roleService.findByName(RoleName.ADMIN).orElseThrow(NoSuchElementException::new);
+
+            admin.setRoles(Collections.singleton(role));
 
             this.userService.register(admin);
         }

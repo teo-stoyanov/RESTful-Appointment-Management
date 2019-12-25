@@ -26,4 +26,8 @@ public class RoleService implements BaseService<Role>{
     public Optional<Role> findByName(RoleName roleName){
         return this.roleRepository.findByName(roleName);
     }
+
+    public Role getByName(RoleName name){
+        return this.roleRepository.getByName(name);
+    }
 }

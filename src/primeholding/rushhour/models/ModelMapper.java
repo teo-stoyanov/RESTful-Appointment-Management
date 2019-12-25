@@ -5,5 +5,5 @@ import primeholding.rushhour.entities.User;
 
 @Mapper
 public interface ModelMapper {
-    User signUpToUser(RegisterModel registerModel);
+    User registerToUser(RegisterModel registerModel);
 }
