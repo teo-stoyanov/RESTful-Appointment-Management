@@ -3,6 +3,7 @@ package primeholding.rushhour.security;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,6 +27,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private JwtTokenProvider tokenProvider;
 
     private UserService userService;
+
+    @Value("${app.authentication}")
+    private String authHeader;
+
+    @Value("${app.token.type}")
+    private String tokenType;
 
     @Autowired
     public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, UserService userService) {
@@ -57,9 +64,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String getJwtFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+        String bearerToken = request.getHeader(this.authHeader);
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(this.tokenType)) {
+            return bearerToken.substring(tokenType.length());
         }
         return null;
     }
