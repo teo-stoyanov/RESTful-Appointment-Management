@@ -1,22 +1,28 @@
 package primeholding.rushhour.responses;
 
 import lombok.Data;
-import org.springframework.stereotype.Component;
+import org.springframework.http.HttpStatus;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Data
-@Component
 public class ErrorResponse implements Response {
-
-    private int code;
+    private HttpStatus status;
     private String message;
-    private String cause;
+    private List<String> errors;
 
-    public ErrorResponse() {
+    public ErrorResponse(HttpStatus status, String message, List<String> errors) {
+        super();
+        this.status = status;
+        this.message = message;
+        this.errors = errors;
     }
 
-    public ErrorResponse(int code, String message, String cause) {
-        this.code = code;
+    public ErrorResponse(HttpStatus status, String message, String error) {
+        super();
+        this.status = status;
         this.message = message;
-        this.cause = cause;
+        errors = Arrays.asList(error);
     }
 }

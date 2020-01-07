@@ -1,5 +1,5 @@
 package primeholding.rushhour.entities;
 
 public enum RoleName {
-    USER,ADMIN
+    USER, ADMIN
 }

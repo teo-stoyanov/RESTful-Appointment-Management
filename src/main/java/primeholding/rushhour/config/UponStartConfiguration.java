@@ -2,9 +2,9 @@ package primeholding.rushhour.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 import primeholding.rushhour.entities.Role;
 import primeholding.rushhour.entities.RoleName;
 import primeholding.rushhour.entities.User;
@@ -14,7 +14,7 @@ import primeholding.rushhour.services.UserService;
 import java.util.Collections;
 import java.util.NoSuchElementException;
 
-@Component
+@Configuration
 public class UponStartConfiguration {
     private static final String ADMIN_EMAIL = "yoda@jade.com";
 

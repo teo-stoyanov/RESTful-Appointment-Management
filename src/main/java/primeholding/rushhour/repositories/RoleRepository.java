@@ -9,7 +9,9 @@ import primeholding.rushhour.entities.Role;
 import java.util.Optional;
 
 @Repository
-public interface RoleRepository extends JpaRepository<Role,Long> {
+public interface RoleRepository extends JpaRepository<Role, Long> {
+
     Optional<Role> findByName(RoleName roleName);
+
     Role getByName(RoleName roleName);
 }

@@ -8,6 +8,7 @@ import primeholding.rushhour.entities.User;
 import primeholding.rushhour.repositories.UserRepository;
 import primeholding.rushhour.security.UserPrincipal;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -24,6 +25,21 @@ public class UserService implements BaseService<User>, UserDetailsService {
     @Override
     public User register(User entity) {
         return this.repository.save(entity);
+    }
+
+    @Override
+    public List<User> findAll() {
+        return this.repository.findAll();
+    }
+
+    @Override
+    public Optional<User> findById(Long id) {
+        return this.repository.findById(id);
+    }
+
+    @Override
+    public void delete(User user) {
+        this.repository.delete(user);
     }
 
     @Override
@@ -45,7 +61,7 @@ public class UserService implements BaseService<User>, UserDetailsService {
         return UserPrincipal.create(optionalUser.get());
     }
 
-    public boolean existWithEmail(String email){
+    public boolean existWithEmail(String email) {
         return this.repository.existsByEmail(email);
     }
 }

@@ -6,28 +6,44 @@ import primeholding.rushhour.entities.Role;
 import primeholding.rushhour.entities.RoleName;
 import primeholding.rushhour.repositories.RoleRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
-public class RoleService implements BaseService<Role>{
+public class RoleService implements BaseService<Role> {
 
-    private RoleRepository roleRepository;
+    private RoleRepository repository;
 
     @Autowired
-    public RoleService(RoleRepository roleRepository) {
-        this.roleRepository = roleRepository;
+    public RoleService(RoleRepository repository) {
+        this.repository = repository;
     }
 
     @Override
     public Role register(Role entity) {
-        return this.roleRepository.save(entity);
+        return this.repository.save(entity);
     }
 
-    public Optional<Role> findByName(RoleName roleName){
-        return this.roleRepository.findByName(roleName);
+    @Override
+    public List<Role> findAll() {
+        return this.repository.findAll();
     }
 
-    public Role getByName(RoleName name){
-        return this.roleRepository.getByName(name);
+    @Override
+    public Optional<Role> findById(Long id) {
+        return this.repository.findById(id);
+    }
+
+    @Override
+    public void delete(Role role) {
+        this.repository.delete(role);
+    }
+
+    public Optional<Role> findByName(RoleName roleName) {
+        return this.repository.findByName(roleName);
+    }
+
+    public Role getByName(RoleName name) {
+        return this.repository.getByName(name);
     }
 }

@@ -9,8 +9,7 @@ import primeholding.rushhour.models.ModelMapper;
 public class ApplicationConfiguration {
 
     @Bean
-    public ModelMapper getModelMapper(){
+    public ModelMapper getModelMapper() {
         return Mappers.getMapper(ModelMapper.class);
     }
-
 }
