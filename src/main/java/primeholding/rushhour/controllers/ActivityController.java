@@ -39,8 +39,6 @@ import java.util.stream.Collectors;
 public class ActivityController extends BaseController {
     private static final String NO_SUCH_ACTIVITY = "No such activity!";
     private static final String ACTIVITY_NOT_FOUND = "Activity not found!";
-    private static final String MIN_DURATION = "minDuration";
-    private static final String PRICE = "price";
 
     private ActivityService activityService;
 
