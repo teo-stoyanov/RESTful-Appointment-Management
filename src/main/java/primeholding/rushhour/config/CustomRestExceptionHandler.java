@@ -9,10 +9,13 @@ import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import primeholding.rushhour.responses.ErrorResponse;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +54,18 @@ public class CustomRestExceptionHandler extends ResponseEntityExceptionHandler {
         String error = "Http Message Not Readable Exception!";
 
         ErrorResponse apiError = new ErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), error);
+        return new ResponseEntity<>(apiError, new HttpHeaders(), apiError.getStatus());
+    }
+
+    @ExceptionHandler({ConstraintViolationException.class})
+    public ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex) {
+        List<String> errors = new ArrayList<>();
+        for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
+            errors.add(violation.getMessage());
+        }
+
+        ErrorResponse apiError = new ErrorResponse(HttpStatus.BAD_REQUEST, "Invalid Input", errors);
+
         return new ResponseEntity<>(apiError, new HttpHeaders(), apiError.getStatus());
     }
 }

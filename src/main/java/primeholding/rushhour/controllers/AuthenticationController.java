@@ -18,7 +18,7 @@ import primeholding.rushhour.entities.RoleName;
 import primeholding.rushhour.entities.User;
 import primeholding.rushhour.models.LogInModel;
 import primeholding.rushhour.models.ModelMapper;
-import primeholding.rushhour.models.RegisterModel;
+import primeholding.rushhour.models.users.PostUserModel;
 import primeholding.rushhour.responses.ErrorResponse;
 import primeholding.rushhour.responses.JwtAuthenticationResponse;
 import primeholding.rushhour.responses.Response;
@@ -58,14 +58,14 @@ public class AuthenticationController extends BaseController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Response> registerEntity(@RequestBody @Valid RegisterModel registerModel) {
-        return registerEntity(registerModel, this.userService, this.roleService, this.mapper, this.passwordEncoder, RoleName.USER);
+    public ResponseEntity<Response> registerEntity(@RequestBody @Valid PostUserModel postUserModel) {
+        return registerEntity(postUserModel, this.userService, this.roleService, this.mapper, this.passwordEncoder, RoleName.USER);
     }
 
     @PostMapping("/register/admin")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Response> registerUser(@RequestBody @Valid RegisterModel registerModel) {
-        return registerEntity(registerModel, this.userService, this.roleService, this.mapper, this.passwordEncoder, RoleName.ADMIN);
+    public ResponseEntity<Response> registerUser(@RequestBody @Valid PostUserModel postUserModel) {
+        return registerEntity(postUserModel, this.userService, this.roleService, this.mapper, this.passwordEncoder, RoleName.ADMIN);
     }
 
     @PostMapping("/login")
@@ -87,22 +87,22 @@ public class AuthenticationController extends BaseController {
         return ResponseEntity.ok(new JwtAuthenticationResponse(jwt));
     }
 
-    private ResponseEntity<Response> registerEntity(RegisterModel registerModel,
+    private ResponseEntity<Response> registerEntity(PostUserModel postUserModel,
                                                     UserService userService, RoleService roleService,
                                                     ModelMapper mapper, PasswordEncoder passwordEncoder, RoleName roleName) {
-        if (userService.existWithEmail(registerModel.getEmail())) {
+        if (userService.existWithEmail(postUserModel.getEmail())) {
             return new ResponseEntity<>(new ErrorResponse(HttpStatus.BAD_REQUEST, "Email exists", "Email Address already in use!")
                     , HttpStatus.BAD_REQUEST);
         }
 
         Role userRole = roleService.getByName(roleName);
 
-        User user = mapper.registerToUser(registerModel);
+        User user = mapper.registerToUser(postUserModel);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRoles(Collections.singleton(userRole));
 
         userService.register(user);
 
-        return successResponse();
+        return successResponse("Registered");
     }
 }

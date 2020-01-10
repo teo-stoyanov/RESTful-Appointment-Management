@@ -3,13 +3,18 @@ package primeholding.rushhour.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import primeholding.rushhour.entities.Activity;
+import primeholding.rushhour.entities.Appointment;
+import primeholding.rushhour.models.ModelMapper;
+import primeholding.rushhour.models.activities.GetActivityModel;
 import primeholding.rushhour.repositories.ActivityRepository;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,9 +24,12 @@ public class ActivityService implements BaseService<Activity> {
 
     private ActivityRepository repository;
 
+    private ModelMapper mapper;
+
     @Autowired
-    public ActivityService(ActivityRepository repository) {
+    public ActivityService(ActivityRepository repository, ModelMapper mapper) {
         this.repository = repository;
+        this.mapper = mapper;
     }
 
     @Override
@@ -40,8 +48,16 @@ public class ActivityService implements BaseService<Activity> {
     }
 
     @Override
-    public void delete(Activity activity) {
-        this.repository.delete(activity);
+    public void deleteById(Long id) {
+        this.repository.deleteById(id);
+    }
+
+    public List<Long> getAppointmentsByActivityId(Long id){
+        return this.repository.getAppointmentsByActivityId(id);
+    }
+
+    public Activity getActivity(Long id){
+        return this.repository.getOne(id);
     }
 
     public boolean existWithName(String name) {
@@ -80,5 +96,28 @@ public class ActivityService implements BaseService<Activity> {
             temp = BigDecimal.valueOf((Integer) stringObjectEntry.getValue());
         }
         return temp;
+    }
+
+    public boolean isValidActivity(List<Long> activityIds) {
+        if(activityIds.isEmpty()){
+            return false;
+        }
+
+        for (Long activityId : activityIds) {
+            Optional<Activity> optionalActivity = this.repository.findById(activityId);
+            if (!optionalActivity.isPresent()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void setActivities(Appointment appointment, List<Long> activityIds){
+        Set<Long> longSet = new HashSet<>(activityIds);
+        for (Long activityId : longSet) {
+            GetActivityModel getActivityModel = this.mapper.activityToGetModel(this.getActivity(activityId));
+            Activity activity = this.mapper.getModelToActivity(getActivityModel);
+            appointment.getActivities().add(activity);
+        }
     }
 }

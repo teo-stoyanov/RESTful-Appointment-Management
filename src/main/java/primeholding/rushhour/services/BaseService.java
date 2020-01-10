@@ -11,5 +11,5 @@ public interface BaseService<T> {
 
     Optional<T> findById(Long id);
 
-    void delete(T item);
+    void deleteById(Long id);
 }

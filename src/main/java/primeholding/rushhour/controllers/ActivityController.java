@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -19,14 +20,14 @@ import primeholding.rushhour.models.ModelMapper;
 import primeholding.rushhour.models.activities.GetActivityModel;
 import primeholding.rushhour.models.activities.PostActivityModel;
 import primeholding.rushhour.models.activities.PutActivityModel;
+import primeholding.rushhour.models.appointments.GetAppointmentModel;
 import primeholding.rushhour.responses.ErrorResponse;
 import primeholding.rushhour.responses.Response;
-import primeholding.rushhour.responses.SuccessResponse;
 import primeholding.rushhour.services.ActivityService;
 import primeholding.rushhour.services.AppointmentService;
-import primeholding.rushhour.services.BaseService;
 
 import javax.validation.Valid;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -79,14 +80,20 @@ public class ActivityController extends BaseController {
 
     @GetMapping("/{id}/appointments")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Set<Appointment>> getAppointments(@PathVariable Long id) {
-        Optional<Activity> optionalActivity = this.activityService.findById(id);
-        if (!optionalActivity.isPresent()) {
+    public ResponseEntity<Set<GetAppointmentModel>> getAppointments(@PathVariable Long id) {
+        if (!isExistsActivity(id)){
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        Set<Appointment> appointments = optionalActivity.get().getAppointments();
 
-        return new ResponseEntity<>(appointments, HttpStatus.OK);
+        List<Long> appointmentsByActivityId = this.activityService.getAppointmentsByActivityId(id);
+        Set<GetAppointmentModel>  getAppointmentModels = new HashSet<>();
+        for (Long appointmentId : appointmentsByActivityId) {
+            Appointment appointment = this.appointmentService.getAppointment(appointmentId);
+            GetAppointmentModel getAppointmentModel = this.mapper.appointmentToGetModel(appointment);
+            getAppointmentModels.add(getAppointmentModel);
+        }
+
+        return new ResponseEntity<>(getAppointmentModels, HttpStatus.OK);
     }
 
     @PostMapping
@@ -98,22 +105,15 @@ public class ActivityController extends BaseController {
         }
 
         Activity activity = this.mapper.postModelToActivity(postActivityModel);
-
-        if (!isValidAppointment(activity, postActivityModel.getAppointmentId(), this.appointmentService)) {
-            return new ResponseEntity<>(new ErrorResponse(HttpStatus.BAD_REQUEST, "Appointment not found!", "Appointment not exists!")
-                    , HttpStatus.BAD_REQUEST);
-        }
-
         this.activityService.register(activity);
 
-        return super.successResponse();
+        return super.successResponse("Created");
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Response> put(@PathVariable Long id, @RequestBody @Valid PutActivityModel putActivityModel) {
-        Optional<Activity> optionalActivity = this.activityService.findById(id);
-        if (!optionalActivity.isPresent()) {
+        if (!isExistsActivity(id)){
             return new ResponseEntity<>(new ErrorResponse(HttpStatus.NOT_FOUND, NO_SUCH_ACTIVITY, ACTIVITY_NOT_FOUND), HttpStatus.NOT_FOUND);
         }
 
@@ -123,22 +123,17 @@ public class ActivityController extends BaseController {
         }
 
         Activity activity = this.mapper.putModelToActivity(putActivityModel);
-
-        if (!isValidAppointment(activity, putActivityModel.getAppointmentId(), this.appointmentService)) {
-            return new ResponseEntity<>(new ErrorResponse(HttpStatus.BAD_REQUEST, "Appointment not found!", "Appointment not exists!")
-                    , HttpStatus.BAD_REQUEST);
-        }
         activity.setId(id);
+
         this.activityService.register(activity);
 
-        return super.successResponse();
+        return super.successResponse("Updated");
     }
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Response> patch(@PathVariable Long id, @RequestBody Map<String, Object> fields) {
-        Optional<Activity> optionalActivity = this.activityService.findById(id);
-        if (!optionalActivity.isPresent()) {
+        if (!isExistsActivity(id)){
             return new ResponseEntity<>(new ErrorResponse(HttpStatus.NOT_FOUND, NO_SUCH_ACTIVITY, ACTIVITY_NOT_FOUND), HttpStatus.NOT_FOUND);
         }
 
@@ -147,57 +142,30 @@ public class ActivityController extends BaseController {
             return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
 
-        if (isNumberLessThanOne(fields, MIN_DURATION)) {
-            return new ResponseEntity<>(new ErrorResponse(HttpStatus.BAD_REQUEST, "Duration must be equal or greater than one!"
-                    , "Number not valid!"), HttpStatus.BAD_REQUEST);
+        Activity updateActivity = this.activityService.getActivity(id);
+        Activity activity = this.activityService.update(updateActivity, fields);
+        try {
+            this.activityService.register(activity);
+        }catch (TransactionSystemException e) {
+            super.constraintViolationCheck(e);
         }
 
-        if (isNumberLessThanOne(fields, PRICE)) {
-            return new ResponseEntity<>(new ErrorResponse(HttpStatus.BAD_REQUEST, "Price must be equal or greater than one!"
-                    , "Number not valid!"), HttpStatus.BAD_REQUEST);
-        }
-
-        Activity activity = this.activityService.update(optionalActivity.get(), fields);
-        this.activityService.register(activity);
-
-        return super.successResponse();
+        return super.successResponse("Updated");
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Response> delete(@PathVariable Long id) {
-        Optional<Activity> optionalActivity = this.activityService.findById(id);
-        if (!optionalActivity.isPresent()) {
-            return new ResponseEntity<>(new ErrorResponse(HttpStatus.NOT_FOUND, NO_SUCH_ACTIVITY, ACTIVITY_NOT_FOUND)
-                    , HttpStatus.NOT_FOUND);
+        if (!isExistsActivity(id)){
+            return new ResponseEntity<>(new ErrorResponse(HttpStatus.NOT_FOUND, NO_SUCH_ACTIVITY, ACTIVITY_NOT_FOUND), HttpStatus.NOT_FOUND);
         }
-        this.activityService.delete(optionalActivity.get());
 
-        return new ResponseEntity<>(new SuccessResponse(HttpStatus.OK, "Activity is deleted!"), HttpStatus.OK);
+        this.activityService.deleteById(id);
+
+        return super.successResponse("Deleted");
     }
 
-    private boolean isValidAppointment(Activity activity, Long appointmentId, BaseService<Appointment> baseService) {
-        if (appointmentId != null) {
-            Optional<Appointment> optionalAppointment = baseService.findById(appointmentId);
-            if (!optionalAppointment.isPresent()) {
-                return false;
-            } else {
-                activity.getAppointments().add(optionalAppointment.get());
-            }
-        }
-        return true;
-    }
-
-    private boolean isNumberLessThanOne(Map<String, Object> fields, String value) {
-        if (!fields.containsKey(value)) {
-            return false;
-        }
-        boolean durationLessThanOne;
-        try {
-            durationLessThanOne = (Integer) fields.get(value) < 1;
-        } catch (Exception ex) {
-            durationLessThanOne = (Double) fields.get(value) < 1;
-        }
-        return durationLessThanOne;
+    private boolean isExistsActivity(Long id) {
+        return this.activityService.findById(id).isPresent();
     }
 }

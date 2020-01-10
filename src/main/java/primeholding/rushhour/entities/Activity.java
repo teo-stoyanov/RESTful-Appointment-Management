@@ -29,6 +29,7 @@ import java.util.Set;
 @Data
 @EntityListeners(AuditingEntityListener.class)
 public class Activity extends Auditable {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

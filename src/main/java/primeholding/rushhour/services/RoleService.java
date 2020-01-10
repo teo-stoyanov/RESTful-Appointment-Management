@@ -35,8 +35,8 @@ public class RoleService implements BaseService<Role> {
     }
 
     @Override
-    public void delete(Role role) {
-        this.repository.delete(role);
+    public void deleteById(Long id) {
+        this.repository.deleteById(id);
     }
 
     public Optional<Role> findByName(RoleName roleName) {

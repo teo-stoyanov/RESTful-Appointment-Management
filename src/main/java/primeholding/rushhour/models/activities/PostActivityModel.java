@@ -21,7 +21,4 @@ public class PostActivityModel {
     @Min(1)
     @NotNull
     private BigDecimal price;
-
-    @Min(1)
-    private Long appointmentId;
 }
