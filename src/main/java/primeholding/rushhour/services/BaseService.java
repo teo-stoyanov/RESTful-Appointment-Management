@@ -1,6 +1,7 @@
 package primeholding.rushhour.services;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface BaseService<T> {
@@ -11,5 +12,9 @@ public interface BaseService<T> {
 
     Optional<T> findById(Long id);
 
-    void delete(T item);
+    void deleteById(Long id);
+
+    T update(T entity, Map<String, Object> fields);
+
+    T getEntity(Long id);
 }

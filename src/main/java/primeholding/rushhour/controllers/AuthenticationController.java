@@ -1,6 +1,7 @@
 package primeholding.rushhour.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,7 +19,8 @@ import primeholding.rushhour.entities.RoleName;
 import primeholding.rushhour.entities.User;
 import primeholding.rushhour.models.LogInModel;
 import primeholding.rushhour.models.ModelMapper;
-import primeholding.rushhour.models.RegisterModel;
+import primeholding.rushhour.models.users.GetUserModel;
+import primeholding.rushhour.models.users.PostUserModel;
 import primeholding.rushhour.responses.ErrorResponse;
 import primeholding.rushhour.responses.JwtAuthenticationResponse;
 import primeholding.rushhour.responses.Response;
@@ -45,6 +47,10 @@ public class AuthenticationController extends BaseController {
 
     private RoleService roleService;
 
+    @Value("${app.token.type}")
+    private String tokenType;
+
+
     @Autowired
     public AuthenticationController(AuthenticationManager authenticationManager, UserService userService,
                                     ModelMapper mapper, PasswordEncoder passwordEncoder, JwtTokenProvider tokenProvider,
@@ -58,14 +64,15 @@ public class AuthenticationController extends BaseController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Response> registerEntity(@RequestBody @Valid RegisterModel registerModel) {
-        return registerEntity(registerModel, this.userService, this.roleService, this.mapper, this.passwordEncoder, RoleName.USER);
+    public ResponseEntity<?> registerEntity(@RequestBody @Valid PostUserModel postUserModel) {
+        return registerEntity(postUserModel, this.userService, this.roleService, this.mapper,
+                this.passwordEncoder, RoleName.USER);
     }
 
     @PostMapping("/register/admin")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Response> registerUser(@RequestBody @Valid RegisterModel registerModel) {
-        return registerEntity(registerModel, this.userService, this.roleService, this.mapper, this.passwordEncoder, RoleName.ADMIN);
+    public ResponseEntity<?> registerUser(@RequestBody @Valid PostUserModel postUserModel) {
+        return registerEntity(postUserModel, this.userService, this.roleService, this.mapper, this.passwordEncoder, RoleName.ADMIN);
     }
 
     @PostMapping("/login")
@@ -84,25 +91,28 @@ public class AuthenticationController extends BaseController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         String jwt = this.tokenProvider.generateToken(authentication);
-        return ResponseEntity.ok(new JwtAuthenticationResponse(jwt));
+
+        return ResponseEntity.ok(new JwtAuthenticationResponse(jwt,this.tokenType));
     }
 
-    private ResponseEntity<Response> registerEntity(RegisterModel registerModel,
+    private ResponseEntity<?> registerEntity(PostUserModel postUserModel,
                                                     UserService userService, RoleService roleService,
                                                     ModelMapper mapper, PasswordEncoder passwordEncoder, RoleName roleName) {
-        if (userService.existWithEmail(registerModel.getEmail())) {
+        if (userService.existWithEmail(postUserModel.getEmail())) {
             return new ResponseEntity<>(new ErrorResponse(HttpStatus.BAD_REQUEST, "Email exists", "Email Address already in use!")
                     , HttpStatus.BAD_REQUEST);
         }
 
         Role userRole = roleService.getByName(roleName);
 
-        User user = mapper.registerToUser(registerModel);
+        User user = mapper.registerToUser(postUserModel);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRoles(Collections.singleton(userRole));
 
-        userService.register(user);
+        User register = userService.register(user);
+        GetUserModel model = this.mapper.userToGetModel(register);
+        model.setRole(register.getRoles());
 
-        return successResponse();
+        return new ResponseEntity<>(model,HttpStatus.CREATED);
     }
 }

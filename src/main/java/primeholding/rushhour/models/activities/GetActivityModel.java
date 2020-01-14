@@ -9,8 +9,14 @@ import java.time.LocalDateTime;
 public class GetActivityModel {
 
     private LocalDateTime createdDate;
+
     private LocalDateTime lastModifiedDate;
+
     private Long id;
+
+    private String name;
+
     private Integer minDuration;
+
     private BigDecimal price;
 }
