@@ -7,6 +7,7 @@ import primeholding.rushhour.entities.RoleName;
 import primeholding.rushhour.repositories.RoleRepository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -37,6 +38,16 @@ public class RoleService implements BaseService<Role> {
     @Override
     public void deleteById(Long id) {
         this.repository.deleteById(id);
+    }
+
+    @Override
+    public Role update(Role entity, Map<String, Object> fields) {
+        return null;
+    }
+
+    @Override
+    public Role getEntity(Long id) {
+        return this.repository.getOne(id);
     }
 
     public Optional<Role> findByName(RoleName roleName) {

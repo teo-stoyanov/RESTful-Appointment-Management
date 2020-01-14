@@ -14,19 +14,18 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import primeholding.rushhour.entities.Appointment;
 import primeholding.rushhour.entities.User;
 import primeholding.rushhour.models.ModelMapper;
 import primeholding.rushhour.models.appointments.GetAppointmentModel;
 import primeholding.rushhour.models.users.GetUserModel;
 import primeholding.rushhour.models.users.PutUserModel;
+import primeholding.rushhour.responses.ErrorResponse;
 import primeholding.rushhour.responses.Response;
 import primeholding.rushhour.services.AppointmentService;
 import primeholding.rushhour.services.UserService;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,13 +55,14 @@ public class UserController extends BaseController {
     @GetMapping
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<List<GetUserModel>> get() {
-        List<User> allUsers = this.userService.findAll();
-        List<GetUserModel> getUserModels = new ArrayList<>();
-        for (User user : allUsers) {
-            GetUserModel getUserModel = this.mapper.userToGetModel(user);
-            getUserModel.setRole(user.getRoles());
-            getUserModels.add(getUserModel);
-        }
+        List<GetUserModel> getUserModels = this.userService
+                .findAll()
+                .stream()
+                .map(x -> {
+                    GetUserModel model = this.mapper.userToGetModel(x);
+                    model.setRole(x.getRoles());
+                    return model;
+                }).collect(Collectors.toList());
 
         return new ResponseEntity<>(getUserModels, HttpStatus.OK);
     }
@@ -86,8 +86,8 @@ public class UserController extends BaseController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        List<Appointment> appointmentsByUserId = this.appointmentService.getAppointmentsByUserId(id);
-        Set<GetAppointmentModel> getAppointmentModels = appointmentsByUserId
+        Set<GetAppointmentModel> getAppointmentModels = this.appointmentService
+                .getAppointmentsByUserId(id)
                 .stream()
                 .map(x -> this.mapper.appointmentToGetModel(x))
                 .collect(Collectors.toSet());
@@ -103,7 +103,8 @@ public class UserController extends BaseController {
 
         Optional<User> optional = this.userService.findByEmail(putUserModel.getEmail());
         if (optional.isPresent() && !optional.get().getId().equals(id)) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
+            return new ResponseEntity<>(new ErrorResponse(HttpStatus.CONFLICT, "Email exists!", "Email already in use!"),
+                    HttpStatus.CONFLICT);
         }
 
         User user = this.mapper.putModelToUser(putUserModel);
@@ -122,11 +123,12 @@ public class UserController extends BaseController {
         if (fields.containsKey("email")) {
             Optional<User> optional = this.userService.findByEmail(fields.get("email").toString());
             if (optional.isPresent() && !optional.get().getId().equals(id)) {
-                return new ResponseEntity<>(HttpStatus.CONFLICT);
+                return new ResponseEntity<>(new ErrorResponse(HttpStatus.CONFLICT, "Email exists!", "Email already in use!"),
+                        HttpStatus.CONFLICT);
             }
         }
 
-        User user = this.userService.getUser(id);
+        User user = this.userService.getEntity(id);
         User update = this.userService.update(user, fields);
 
         if (fields.containsKey("password")) {
@@ -135,7 +137,7 @@ public class UserController extends BaseController {
         try {
             this.userService.register(update);
         } catch (TransactionSystemException e) {
-           super.constraintViolationCheck(e);
+            super.constraintViolationCheck(e);
         }
 
         return super.successResponse("Updated");

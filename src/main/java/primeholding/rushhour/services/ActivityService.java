@@ -52,48 +52,50 @@ public class ActivityService implements BaseService<Activity> {
         this.repository.deleteById(id);
     }
 
-    public List<Long> getAppointmentsByActivityId(Long id){
-        return this.repository.getAppointmentsByActivityId(id);
+    @Override
+    public Activity update(Activity activity, Map<String, Object> fields) {
+        fields.forEach((key, value) -> {
+            Field entityFiled;
+            try {
+                entityFiled = activity.getClass().getDeclaredField(key);
+                entityFiled.setAccessible(true);
+                if (key.equals("price")) {
+                    BigDecimal temp = getBigDecimal(value);
+                    entityFiled.set(activity, temp);
+                } else {
+                    entityFiled.set(activity, value);
+                }
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                LOGGER.log(Level.SEVERE, e.getMessage(), e);
+            }
+        });
+
+        return activity;
     }
 
-    public Activity getActivity(Long id){
+    @Override
+    public Activity getEntity(Long id){
         return this.repository.getOne(id);
+    }
+
+    public List<Long> getAppointmentsByActivityId(Long id){
+        return this.repository.getAppointmentsByActivityId(id);
     }
 
     public boolean existWithName(String name) {
         return this.repository.existsByName(name);
     }
 
-    public Activity update(Activity activity, Map<String, Object> fields) {
-        for (Map.Entry<String, Object> stringObjectEntry : fields.entrySet()) {
-            Field entityFiled;
-            try {
-                entityFiled = activity.getClass().getDeclaredField(stringObjectEntry.getKey());
-                entityFiled.setAccessible(true);
-                if (stringObjectEntry.getKey().equals("price")) {
-                    BigDecimal temp;
-                    temp = getBigDecimal(stringObjectEntry);
-                    entityFiled.set(activity, temp);
-                    continue;
-                }
-                entityFiled.set(activity, stringObjectEntry.getValue());
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                LOGGER.log(Level.SEVERE, e.getMessage(), e);
-            }
-        }
-        return activity;
-    }
-
     public Optional<Activity> findByName(String name) {
         return this.repository.findByName(name);
     }
 
-    private BigDecimal getBigDecimal(Map.Entry<String, Object> stringObjectEntry) {
+    private BigDecimal getBigDecimal(Object value) {
         BigDecimal temp;
         try {
-            temp = BigDecimal.valueOf((Double) stringObjectEntry.getValue());
+            temp = BigDecimal.valueOf((Double) value);
         } catch (Exception ex) {
-            temp = BigDecimal.valueOf((Integer) stringObjectEntry.getValue());
+            temp = BigDecimal.valueOf((Integer) value);
         }
         return temp;
     }
@@ -115,7 +117,7 @@ public class ActivityService implements BaseService<Activity> {
     public void setActivities(Appointment appointment, List<Long> activityIds){
         Set<Long> longSet = new HashSet<>(activityIds);
         for (Long activityId : longSet) {
-            GetActivityModel getActivityModel = this.mapper.activityToGetModel(this.getActivity(activityId));
+            GetActivityModel getActivityModel = this.mapper.activityToGetModel(this.getEntity(activityId));
             Activity activity = this.mapper.getModelToActivity(getActivityModel);
             appointment.getActivities().add(activity);
         }

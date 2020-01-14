@@ -27,7 +27,6 @@ import primeholding.rushhour.services.ActivityService;
 import primeholding.rushhour.services.AppointmentService;
 
 import javax.validation.Valid;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,6 +38,8 @@ import java.util.stream.Collectors;
 public class ActivityController extends BaseController {
     private static final String NO_SUCH_ACTIVITY = "No such activity!";
     private static final String ACTIVITY_NOT_FOUND = "Activity not found!";
+    private static final String NAME_EXISTS = "Name exists!";
+    private static final String NAME_ALREADY_IN_USE = "Name already in use!";
 
     private ActivityService activityService;
 
@@ -79,45 +80,49 @@ public class ActivityController extends BaseController {
     @GetMapping("/{id}/appointments")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Set<GetAppointmentModel>> getAppointments(@PathVariable Long id) {
-        if (!isExistsActivity(id)){
+        if (!isExistsActivity(id)) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
         List<Long> appointmentsByActivityId = this.activityService.getAppointmentsByActivityId(id);
-        Set<GetAppointmentModel>  getAppointmentModels = new HashSet<>();
-        for (Long appointmentId : appointmentsByActivityId) {
-            Appointment appointment = this.appointmentService.getAppointment(appointmentId);
-            GetAppointmentModel getAppointmentModel = this.mapper.appointmentToGetModel(appointment);
-            getAppointmentModels.add(getAppointmentModel);
-        }
+        Set<GetAppointmentModel> getAppointmentModels = appointmentsByActivityId
+                .stream()
+                .map(x -> {
+                    Appointment appointment = this.appointmentService.getEntity(x);
+                    GetAppointmentModel model = this.mapper.appointmentToGetModel(appointment);
+                    model.setUserId(appointment.getUser().getId());
+                    return model;
+                }).collect(Collectors.toSet());
 
         return new ResponseEntity<>(getAppointmentModels, HttpStatus.OK);
     }
 
     @PostMapping
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Response> post(@RequestBody @Valid PostActivityModel postActivityModel) {
+    public ResponseEntity<?> post(@RequestBody @Valid PostActivityModel postActivityModel) {
         if (this.activityService.existWithName(postActivityModel.getName())) {
-            return new ResponseEntity<>(new ErrorResponse(HttpStatus.BAD_REQUEST, "Name exists!", "Name already in use!"),
+            return new ResponseEntity<>(new ErrorResponse(HttpStatus.BAD_REQUEST, NAME_EXISTS, NAME_ALREADY_IN_USE),
                     HttpStatus.BAD_REQUEST);
         }
 
         Activity activity = this.mapper.postModelToActivity(postActivityModel);
-        this.activityService.register(activity);
+        Activity register = this.activityService.register(activity);
+        GetActivityModel model = this.mapper.activityToGetModel(register);
 
-        return super.successResponse("Created");
+        return new ResponseEntity<>(model,HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Response> put(@PathVariable Long id, @RequestBody @Valid PutActivityModel putActivityModel) {
-        if (!isExistsActivity(id)){
+        if (!isExistsActivity(id)) {
             return new ResponseEntity<>(new ErrorResponse(HttpStatus.NOT_FOUND, NO_SUCH_ACTIVITY, ACTIVITY_NOT_FOUND), HttpStatus.NOT_FOUND);
         }
 
         Optional<Activity> optional = this.activityService.findByName(putActivityModel.getName());
         if (optional.isPresent() && !optional.get().getId().equals(id)) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
+            return new ResponseEntity<>(new ErrorResponse(HttpStatus.BAD_REQUEST, NAME_EXISTS, NAME_ALREADY_IN_USE),
+                    HttpStatus.BAD_REQUEST);
         }
 
         Activity activity = this.mapper.putModelToActivity(putActivityModel);
@@ -131,20 +136,23 @@ public class ActivityController extends BaseController {
     @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Response> patch(@PathVariable Long id, @RequestBody Map<String, Object> fields) {
-        if (!isExistsActivity(id)){
+        if (!isExistsActivity(id)) {
             return new ResponseEntity<>(new ErrorResponse(HttpStatus.NOT_FOUND, NO_SUCH_ACTIVITY, ACTIVITY_NOT_FOUND), HttpStatus.NOT_FOUND);
         }
 
-        Optional<Activity> optional = this.activityService.findByName(fields.get("name").toString());
-        if (optional.isPresent() && !optional.get().getId().equals(id)) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        if (fields.containsKey("name")) {
+            Optional<Activity> optional = this.activityService.findByName(fields.get("name").toString());
+            if (optional.isPresent() && !optional.get().getId().equals(id)) {
+                return new ResponseEntity<>(new ErrorResponse(HttpStatus.CONFLICT, NAME_EXISTS, NAME_ALREADY_IN_USE),
+                        HttpStatus.CONFLICT);
+            }
         }
 
-        Activity updateActivity = this.activityService.getActivity(id);
+        Activity updateActivity = this.activityService.getEntity(id);
         Activity activity = this.activityService.update(updateActivity, fields);
         try {
             this.activityService.register(activity);
-        }catch (TransactionSystemException e) {
+        } catch (TransactionSystemException e) {
             super.constraintViolationCheck(e);
         }
 
@@ -154,10 +162,9 @@ public class ActivityController extends BaseController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Response> delete(@PathVariable Long id) {
-        if (!isExistsActivity(id)){
-            return new ResponseEntity<>(new ErrorResponse(HttpStatus.NOT_FOUND, NO_SUCH_ACTIVITY, ACTIVITY_NOT_FOUND), HttpStatus.NOT_FOUND);
+        if (!isExistsActivity(id)) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-
         this.activityService.deleteById(id);
 
         return super.successResponse("Deleted");

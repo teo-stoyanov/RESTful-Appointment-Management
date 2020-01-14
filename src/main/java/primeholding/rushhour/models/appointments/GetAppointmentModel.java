@@ -16,4 +16,6 @@ public class GetAppointmentModel {
     private LocalDateTime startDate;
 
     private LocalDateTime endDate;
+
+    private Long userId;
 }

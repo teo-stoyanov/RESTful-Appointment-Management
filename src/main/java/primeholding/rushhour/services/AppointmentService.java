@@ -4,17 +4,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import primeholding.rushhour.entities.Activity;
 import primeholding.rushhour.entities.Appointment;
-import primeholding.rushhour.models.appointments.PostAppointmentModel;
 import primeholding.rushhour.repositories.AppointmentRepository;
 
+import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Service
 public class AppointmentService implements BaseService<Appointment> {
+    private static final Logger LOGGER = Logger.getLogger(AppointmentService.class.getName());
 
     private ActivityService activityService;
 
@@ -46,7 +51,30 @@ public class AppointmentService implements BaseService<Appointment> {
         this.repository.deleteById(id);
     }
 
-    public Appointment getAppointment(Long id) {
+    @Override
+    public Appointment update(Appointment entity, Map<String, Object> fields) {
+        fields.forEach((key, value) -> {
+            Field entityFiled;
+            try {
+                entityFiled = entity.getClass().getDeclaredField(key);
+                entityFiled.setAccessible(true);
+                if (key.equals("startDate")) {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    LocalDateTime dateTime = LocalDateTime.parse(value.toString(), formatter);
+                    entityFiled.set(entity,dateTime);
+                } else {
+                    entityFiled.set(entity, value);
+                }
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                LOGGER.log(Level.SEVERE, e.getMessage(), e);
+            }
+        });
+
+        return entity;
+    }
+
+    @Override
+    public Appointment getEntity(Long id) {
         return this.repository.getOne(id);
     }
 
@@ -58,17 +86,14 @@ public class AppointmentService implements BaseService<Appointment> {
         return this.repository.getAppointmentsByUserId(id);
     }
 
-    public boolean isAppointmentTimeAvailable(PostAppointmentModel postAppointmentModel) {
-
-        LocalDateTime startDate = postAppointmentModel.getStartDate();
+    public boolean isAppointmentTimeAvailable(LocalDateTime startDate, List<Long> activityIds) {
         if(startDate.isBefore(LocalDateTime.now())){
             return false;
         }
 
-        List<Activity> activities = postAppointmentModel
-                .getActivityIds()
+        List<Activity> activities = activityIds
                 .stream()
-                .map(x -> this.activityService.getActivity(x))
+                .map(x -> this.activityService.getEntity(x))
                 .collect(Collectors.toList());
 
         LocalDateTime endDate = startDate;
@@ -77,7 +102,7 @@ public class AppointmentService implements BaseService<Appointment> {
             endDate = endDate.plusMinutes(activity.getMinDuration());
             List<Long> appointmentsByActivityId = this.activityService.getAppointmentsByActivityId(activity.getId());
             appointmentsByActivityId
-                    .forEach(x -> appointments.add(this.getAppointment(x)));
+                    .forEach(x -> appointments.add(this.getEntity(x)));
         }
 
         for (Appointment appointment : appointments) {
@@ -94,7 +119,7 @@ public class AppointmentService implements BaseService<Appointment> {
     public LocalDateTime getAppointmentEndDate(LocalDateTime startDate, List<Long> activityIds){
         List<Activity> activities =activityIds
                 .stream()
-                .map(x -> this.activityService.getActivity(x))
+                .map(x -> this.activityService.getEntity(x))
                 .collect(Collectors.toList());
 
         for (Activity activity : activities) {

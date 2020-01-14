@@ -16,9 +16,6 @@ public class PostAppointmentModel {
     @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
     private LocalDateTime startDate;
 
-    @NotNull
-    private Long userId;
-
     @NotEmpty
     private List<Long> activityIds = new ArrayList<>();
 }

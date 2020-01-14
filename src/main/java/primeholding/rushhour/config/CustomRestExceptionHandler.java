@@ -61,7 +61,7 @@ public class CustomRestExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex) {
         List<String> errors = new ArrayList<>();
         for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
-            errors.add(violation.getMessage());
+           errors.add(violation.getPropertyPath() + " " + violation.getMessage());
         }
 
         ErrorResponse apiError = new ErrorResponse(HttpStatus.BAD_REQUEST, "Invalid Input", errors);

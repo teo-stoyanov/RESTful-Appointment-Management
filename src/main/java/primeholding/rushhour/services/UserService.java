@@ -54,11 +54,32 @@ public class UserService implements BaseService<User>, UserDetailsService {
     }
 
     @Override
-    public void deleteById(Long id){
+    public void deleteById(Long id) {
         this.repository.deleteById(id);
     }
 
-    public User getUser(Long id){
+    @Override
+    public User update(User user, Map<String, Object> fields) {
+        fields.forEach((key, value) -> {
+            Field entityFiled;
+            try {
+                entityFiled = user.getClass().getDeclaredField(key);
+                entityFiled.setAccessible(true);
+                if (key.equals("password")) {
+                    entityFiled.set(user, value.toString());
+                } else {
+                    entityFiled.set(user, value);
+                }
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                LOGGER.log(Level.SEVERE, e.getMessage(), e);
+            }
+        });
+
+        return user;
+    }
+
+    @Override
+    public User getEntity(Long id) {
         return this.repository.getOne(id);
     }
 
@@ -71,29 +92,11 @@ public class UserService implements BaseService<User>, UserDetailsService {
         return UserPrincipal.create(optionalUser.get());
     }
 
-    public Optional<User> findByEmail(String email){
+    public Optional<User> findByEmail(String email) {
         return this.repository.findByEmail(email);
     }
 
     public boolean existWithEmail(String email) {
         return this.repository.existsByEmail(email);
-    }
-
-    public User update(User user, Map<String, Object> fields) {
-        for (Map.Entry<String, Object> stringObjectEntry : fields.entrySet()) {
-            Field entityFiled;
-            try {
-                entityFiled = user.getClass().getDeclaredField(stringObjectEntry.getKey());
-                entityFiled.setAccessible(true);
-                if(stringObjectEntry.getKey().equals("password")){
-                    entityFiled.set(user,stringObjectEntry.getValue().toString());
-                    continue;
-                }
-                entityFiled.set(user, stringObjectEntry.getValue());
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                LOGGER.log(Level.SEVERE, e.getMessage(), e);
-            }
-        }
-        return user;
     }
 }
