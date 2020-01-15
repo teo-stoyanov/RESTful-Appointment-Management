@@ -6,6 +6,7 @@ import primeholding.rushhour.entities.Role;
 import primeholding.rushhour.entities.RoleName;
 import primeholding.rushhour.repositories.RoleRepository;
 
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,8 +27,8 @@ public class RoleService implements BaseService<Role> {
     }
 
     @Override
-    public List<Role> findAll() {
-        return this.repository.findAll();
+    public List<Role> findAll(Pageable pageable) {
+        return null;
     }
 
     @Override

@@ -1,6 +1,8 @@
 package primeholding.rushhour.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.TransactionSystemException;
@@ -62,9 +64,10 @@ public class AppointmentController extends BaseController {
     }
 
     @GetMapping("/appointments")
-    public ResponseEntity<List<GetAppointmentModel>> get() {
+    public ResponseEntity<PageImpl> get(Pageable pageable) {
+
         List<GetAppointmentModel> getAppointmentModels = this.appointmentService
-                .findAll()
+                .findAll(pageable)
                 .stream()
                 .map(x -> {
                     GetAppointmentModel model = this.mapper.appointmentToGetModel(x);
@@ -73,7 +76,7 @@ public class AppointmentController extends BaseController {
                 })
                 .collect(Collectors.toList());
 
-        return new ResponseEntity<>(getAppointmentModels, HttpStatus.OK);
+        return new ResponseEntity<>(new PageImpl(getAppointmentModels,pageable,getAppointmentModels.size()), HttpStatus.OK);
     }
 
     @GetMapping("/appointments/{id}")
@@ -131,7 +134,7 @@ public class AppointmentController extends BaseController {
         GetAppointmentModel model = this.mapper.appointmentToGetModel(register);
         model.setUserId(register.getUser().getId());
 
-        return new ResponseEntity<>(model,HttpStatus.CREATED);
+        return new ResponseEntity<>(model, HttpStatus.CREATED);
     }
 
     @PatchMapping("/appointments/{id}")

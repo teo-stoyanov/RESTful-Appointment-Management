@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import primeholding.rushhour.entities.Activity;
 import primeholding.rushhour.entities.Appointment;
 import primeholding.rushhour.repositories.AppointmentRepository;
+import org.springframework.data.domain.Pageable;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
@@ -37,8 +38,8 @@ public class AppointmentService implements BaseService<Appointment> {
     }
 
     @Override
-    public List<Appointment> findAll() {
-        return this.repository.findAll();
+    public List<Appointment> findAll(Pageable pageable) {
+       return this.repository.findAll(pageable).toList();
     }
 
     @Override
@@ -76,6 +77,10 @@ public class AppointmentService implements BaseService<Appointment> {
     @Override
     public Appointment getEntity(Long id) {
         return this.repository.getOne(id);
+    }
+
+    public List<Appointment> findAll(){
+        return this.repository.findAll();
     }
 
     public List<Long> getActivitiesByAppointmentId(Long id) {

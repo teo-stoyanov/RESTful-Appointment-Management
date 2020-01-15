@@ -50,7 +50,6 @@ public class AuthenticationController extends BaseController {
     @Value("${app.token.type}")
     private String tokenType;
 
-
     @Autowired
     public AuthenticationController(AuthenticationManager authenticationManager, UserService userService,
                                     ModelMapper mapper, PasswordEncoder passwordEncoder, JwtTokenProvider tokenProvider,
