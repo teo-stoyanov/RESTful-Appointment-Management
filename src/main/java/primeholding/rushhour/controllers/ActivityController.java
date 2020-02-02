@@ -1,6 +1,8 @@
 package primeholding.rushhour.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -55,14 +57,15 @@ public class ActivityController extends BaseController {
     }
 
     @GetMapping
-    public ResponseEntity<List<GetActivityModel>> get() {
-        List<Activity> activities = this.activityService.findAll();
-        List<GetActivityModel> getActivityModels = activities
+    public ResponseEntity<PageImpl> get(Pageable pageable) {
+
+        List<GetActivityModel> getActivityModels = this.activityService
+                .findAll(pageable)
                 .stream()
                 .map(x -> this.mapper.activityToGetModel(x))
                 .collect(Collectors.toList());
 
-        return new ResponseEntity<>(getActivityModels, HttpStatus.OK);
+        return new ResponseEntity<>(new PageImpl(getActivityModels,pageable,getActivityModels.size()), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
@@ -109,7 +112,7 @@ public class ActivityController extends BaseController {
         Activity register = this.activityService.register(activity);
         GetActivityModel model = this.mapper.activityToGetModel(register);
 
-        return new ResponseEntity<>(model,HttpStatus.CREATED);
+        return new ResponseEntity<>(model, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")

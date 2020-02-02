@@ -8,6 +8,7 @@ import primeholding.rushhour.models.ModelMapper;
 import primeholding.rushhour.models.activities.GetActivityModel;
 import primeholding.rushhour.repositories.ActivityRepository;
 
+import org.springframework.data.domain.Pageable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.HashSet;
@@ -28,18 +29,15 @@ public class ActivityService implements BaseService<Activity> {
 
     @Autowired
     public ActivityService(ActivityRepository repository, ModelMapper mapper) {
+
         this.repository = repository;
+
         this.mapper = mapper;
     }
 
     @Override
     public Activity register(Activity entity) {
         return this.repository.save(entity);
-    }
-
-    @Override
-    public List<Activity> findAll() {
-        return this.repository.findAll();
     }
 
     @Override
@@ -76,6 +74,11 @@ public class ActivityService implements BaseService<Activity> {
     @Override
     public Activity getEntity(Long id){
         return this.repository.getOne(id);
+    }
+
+    @Override
+    public List<Activity> findAll(Pageable pageable) {
+        return this.repository.findAll(pageable).toList();
     }
 
     public List<Long> getAppointmentsByActivityId(Long id){

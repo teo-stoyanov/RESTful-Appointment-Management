@@ -1,6 +1,7 @@
 package primeholding.rushhour.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
@@ -34,8 +35,8 @@ public class UserService implements BaseService<User>, UserDetailsService {
     }
 
     @Override
-    public List<User> findAll() {
-        return this.repository.findAll();
+    public List<User> findAll(Pageable pageable) {
+        return this.repository.findAll(pageable).toList();
     }
 
     @Override
@@ -82,6 +83,7 @@ public class UserService implements BaseService<User>, UserDetailsService {
     public User getEntity(Long id) {
         return this.repository.getOne(id);
     }
+
 
     public UserDetails loadUserById(Long userId) {
         Optional<User> optionalUser = this.repository.findById(userId);

@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,6 +26,7 @@ import primeholding.rushhour.responses.ErrorResponse;
 import primeholding.rushhour.responses.JwtAuthenticationResponse;
 import primeholding.rushhour.responses.Response;
 import primeholding.rushhour.security.JwtTokenProvider;
+import primeholding.rushhour.services.EmailService;
 import primeholding.rushhour.services.RoleService;
 import primeholding.rushhour.services.UserService;
 
@@ -50,17 +52,22 @@ public class AuthenticationController extends BaseController {
     @Value("${app.token.type}")
     private String tokenType;
 
+    private JavaMailSender javaMailSender;
+
+    private EmailService emailService;
 
     @Autowired
     public AuthenticationController(AuthenticationManager authenticationManager, UserService userService,
                                     ModelMapper mapper, PasswordEncoder passwordEncoder, JwtTokenProvider tokenProvider,
-                                    RoleService roleService) {
+                                    RoleService roleService, JavaMailSender javaMailSender, EmailService emailService) {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.mapper = mapper;
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.roleService = roleService;
+        this.javaMailSender = javaMailSender;
+        this.emailService = emailService;
     }
 
     @PostMapping("/register")
@@ -112,6 +119,8 @@ public class AuthenticationController extends BaseController {
         User register = userService.register(user);
         GetUserModel model = this.mapper.userToGetModel(register);
         model.setRole(register.getRoles());
+
+        this.emailService.sendEmail(this.javaMailSender);
 
         return new ResponseEntity<>(model,HttpStatus.CREATED);
     }

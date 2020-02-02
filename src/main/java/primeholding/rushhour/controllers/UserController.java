@@ -1,6 +1,8 @@
 package primeholding.rushhour.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -54,9 +56,10 @@ public class UserController extends BaseController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<List<GetUserModel>> get() {
+    public ResponseEntity<PageImpl> get(Pageable pageable) {
+
         List<GetUserModel> getUserModels = this.userService
-                .findAll()
+                .findAll(pageable)
                 .stream()
                 .map(x -> {
                     GetUserModel model = this.mapper.userToGetModel(x);
@@ -64,7 +67,7 @@ public class UserController extends BaseController {
                     return model;
                 }).collect(Collectors.toList());
 
-        return new ResponseEntity<>(getUserModels, HttpStatus.OK);
+        return new ResponseEntity<>(new PageImpl(getUserModels,pageable,getUserModels.size()), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
